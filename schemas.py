@@ -16,8 +16,9 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 class AccountCreate(BaseModel):
-    user_id : int
     name : str
+    balance : float = 0.0 
+    user_id : int
 class AccountResponse(BaseModel):
     id : int
     name : str
@@ -60,5 +61,31 @@ class TransactionResponse(BaseModel):
     account_id : int
     category_id : int
     
+    class Config:
+        from_attributes = True
+
+class BudgetAllocationCreate(BaseModel):
+    month : str       
+    amount : float    
+    user_id : int
+    category_id : int
+
+class BudgetAllocationResponse(BaseModel):
+    id : int
+    month : str
+    amount : float
+    user_id : int
+    category_id : int
+
+    class Config:
+        from_attributes = True
+
+class CategorySummary(BaseModel):
+    category_id: int
+    category_name: str
+    budgeted: float     
+    spent: float        
+    remaining: float
+        
     class Config:
         from_attributes = True

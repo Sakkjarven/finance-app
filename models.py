@@ -31,3 +31,12 @@ class Transaction(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     account_id = Column(Integer, ForeignKey("accounts.id"))    
     category_id = Column(Integer, ForeignKey("categories.id"))    
+
+class BudgetAllocation(Base):
+    __tablename__ = "budget_allocations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    month = Column(String) 
+    amount = Column(Float) 
+    user_id = Column(Integer, ForeignKey("users.id"))
+    category_id = Column(Integer, ForeignKey("categories.id"))
