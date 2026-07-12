@@ -7,18 +7,20 @@ class TransactionType(str, Enum):
     expense = "expense"
     transfer = "transfer"
 
-class UserCreate(BaseModel):
-    username : str
-class UserResponse(BaseModel):
-    id : int
-    username : str
+class UserBase(BaseModel):
+    email : str
 
+class UserCreate(UserBase):
+    password : str
+
+class UserResponse(UserBase):
+    id : int
     class Config:
         from_attributes = True
+
 class AccountCreate(BaseModel):
     name : str
     balance : float = 0.0 
-    user_id : int
 class AccountResponse(BaseModel):
     id : int
     name : str
@@ -30,7 +32,6 @@ class AccountResponse(BaseModel):
 
 class CategoryCreate(BaseModel):
     name : str
-    user_id : int
 
 class CategoryResponse(BaseModel):
     id : int
@@ -46,7 +47,6 @@ class TransactionCreate(BaseModel):
     date : datetime
     type : TransactionType
 
-    user_id : int
     account_id : int
     category_id : int
 

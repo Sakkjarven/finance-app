@@ -1,11 +1,18 @@
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
-import models, schemas
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
 from database import engine, SessionLocal
+from auth import SECRET_KEY, ALGORITHM
+from auth import get_password_hash, verify_password, create_access_token
+from sqlalchemy.orm import Session
+import jwt
+import models, schemas
+
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Finance AI app")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def get_db():
     db = SessionLocal()
@@ -14,19 +21,53 @@ def get_db():
     finally:
         db.close()
 
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Неверный токен")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Токен протух")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Невалидный токен")
+    
+    user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+    if user is None:
+        raise HTTPException(status_code=401, detail="Пользователь не найден")
+    
+    return user
+
 @app.get("/")
 def read_root():
     return {"message": "Hello!"}
 
 #Endpoints fur users
 
-@app.post("/users/", response_model=schemas.UserResponse)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = models.User(username=user.username)
-    db.add(db_user)
+@app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Этот email уже зарегистрирован")
+
+    hashed_pw = get_password_hash(user.password)
+    
+    new_user = models.User(email=user.email, hashed_password=hashed_pw)
+    db.add(new_user)
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.refresh(new_user)
+    
+    return new_user
+
+@app.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends(),
+           db: Session = Depends(get_db)
+           ):
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Неверный email или пароль")
+    access_token = create_access_token(data={"sub": str(user.id)})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/users/", response_model=list[schemas.UserResponse])
 def get_users(db: Session = Depends(get_db)):
@@ -36,40 +77,63 @@ def get_users(db: Session = Depends(get_db)):
 #Endpoints fur accounts
 
 @app.post("/accounts/", response_model=schemas.AccountResponse)
-def create_account(account: schemas.AccountCreate, db: Session = Depends(get_db)):
-    db_account = models.Account(user_id=account.user_id, balance=account.balance, name=account.name)
+def create_account(account: schemas.AccountCreate,
+                    db: Session = Depends(get_db),
+                    current_user: models.User = Depends(get_current_user)
+                    ):
+    db_account = models.Account(user_id=current_user.id, balance=account.balance, name=account.name)
     db.add(db_account)
     db.commit()
     db.refresh(db_account)
     return db_account
 
 @app.get("/accounts/", response_model=list[schemas.AccountResponse])
-def get_accounts(db: Session = Depends(get_db)):
-    accounts = db.query(models.Account).all()
+def get_accounts(db: Session = Depends(get_db),
+                 current_user: models.User = Depends(get_current_user)
+                 ):
+    accounts = db.query(models.Account).where(models.Account.user_id==current_user.id).all()
     return accounts
 
 #Endpoints fur categories
 
 @app.post("/categories/", response_model=schemas.CategoryCreate)
-def create_category(category: schemas.CategoryCreate, db: Session = Depends(get_db)):
-    db_category = models.Category(name=category.name, user_id=category.user_id)
+def create_category(category: schemas.CategoryCreate,
+                     db: Session = Depends(get_db),
+                     current_user: models.User = Depends(get_current_user)
+                     ):
+    db_category = models.Category(name=category.name, user_id=current_user.id)
     db.add(db_category)
     db.commit()
     db.refresh(db_category)
     return db_category
 
 @app.get("/categories/", response_model=list[schemas.CategoryResponse])
-def get_category(db: Session = Depends(get_db)):
-    categories = db.query(models.Category).all()
+def get_category(db: Session = Depends(get_db),
+                 current_user: models.User = Depends(get_current_user)):
+    categories = db.query(models.Category).where(models.Category.user_id==current_user.id).all()
     return categories
 
 #Endpoints fur transactions
 
 @app.post("/transactions/", response_model=schemas.TransactionResponse)
-def create_transaction(transaction: schemas.TransactionCreate, db: Session = Depends(get_db)):
-    account = db.query(models.Account).filter(models.Account.id == transaction.account_id).first()
-    if not account:
-        raise HTTPException(status_code=404, detail="Счет не найден")
+def create_transaction(
+    transaction: schemas.TransactionCreate, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    account = db.query(models.Account).filter(
+        models.Account.id == transaction.account_id,
+        models.Account.user_id == current_user.id 
+    ).first()
+
+    category = db.query(models.Category).filter(
+        models.Category.id == transaction.category_id,
+        models.Category.user_id == current_user.id
+    ).first()
+
+    if not account or not category:
+        raise HTTPException(status_code=404, detail="Счет или категория не найдена")
+    
     if transaction.type == schemas.TransactionType.expense:
         if(account.balance < transaction.amount):
             raise HTTPException(status_code=400, detail="balance less than expense")
@@ -80,7 +144,7 @@ def create_transaction(transaction: schemas.TransactionCreate, db: Session = Dep
         amount=transaction.amount,
         description=transaction.description,
         type=transaction.type,
-        user_id=transaction.user_id,
+        user_id=current_user.id,
         account_id=transaction.account_id,
         category_id=transaction.category_id
     )
