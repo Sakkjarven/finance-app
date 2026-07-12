@@ -67,7 +67,6 @@ class TransactionResponse(BaseModel):
 class BudgetAllocationCreate(BaseModel):
     month : str       
     amount : float    
-    user_id : int
     category_id : int
 
 class BudgetAllocationResponse(BaseModel):

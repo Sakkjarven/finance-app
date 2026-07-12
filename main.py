@@ -161,9 +161,21 @@ def get_transactions(db: Session = Depends(get_db)):
 # endpoints for budget alloc
 
 @app.post("/budgets/", response_model=schemas.BudgetAllocationResponse)
-def set_budget(budget: schemas.BudgetAllocationCreate, db: Session = Depends(get_db)):
+def set_budget(
+    budget: schemas.BudgetAllocationCreate, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user) 
+):
+    category = db.query(models.Category).filter(
+        models.Category.id == budget.category_id,
+        models.Category.user_id == current_user.id
+    ).first()
+    
+    if not category:
+        raise HTTPException(status_code=404, detail="Категория не найдена или принадлежит не вам")
+
     existing_budget = db.query(models.BudgetAllocation).filter(
-        models.BudgetAllocation.user_id == budget.user_id,
+        models.BudgetAllocation.user_id == current_user.id, # <-- БЕРЕМ ИЗ ТОКЕНА
         models.BudgetAllocation.category_id == budget.category_id,
         models.BudgetAllocation.month == budget.month
     ).first()
@@ -177,29 +189,39 @@ def set_budget(budget: schemas.BudgetAllocationCreate, db: Session = Depends(get
         new_budget = models.BudgetAllocation(
             month=budget.month,
             amount=budget.amount,
-            user_id=budget.user_id,
-            category_id=budget.category_id
+            category_id=budget.category_id,
+            user_id=current_user.id # <-- БЕРЕМ ИЗ ТОКЕНА
         )
         db.add(new_budget)
         db.commit()
         db.refresh(new_budget)
         return new_budget
 
+
 @app.get("/budgets/", response_model=list[schemas.BudgetAllocationResponse])
-def get_budgets(db: Session = Depends(get_db)):
-    return db.query(models.BudgetAllocation).all()
+def get_budgets(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user) 
+):
+    return db.query(models.BudgetAllocation).filter(
+        models.BudgetAllocation.user_id == current_user.id
+    ).all()
 
 #endpoints for analytics
 
 @app.get("/analytics/budget-summary/", response_model=list[schemas.CategorySummary])
-def get_budget_summary(user_id: int, month: str, db: Session = Depends(get_db)):
+def get_budget_summary(
+    month: str, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user) 
+):
     budgets = db.query(models.BudgetAllocation).filter(
-        models.BudgetAllocation.user_id == user_id,
+        models.BudgetAllocation.user_id == current_user.id,
         models.BudgetAllocation.month == month
     ).all()
 
     transactions = db.query(models.Transaction).filter(
-        models.Transaction.user_id == user_id,
+        models.Transaction.user_id == current_user.id, 
         models.Transaction.type == schemas.TransactionType.expense
     ).all()
 
