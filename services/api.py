@@ -1,7 +1,8 @@
+import os
 import requests
 from datetime import datetime
 
-API_URL = "http://127.0.0.1:8000"
+API_URL = os.getenv("FINANCE_API_URL", "http://127.0.0.1:8000")
 
 def _parse_error(res: requests.Response) -> str:
     try:

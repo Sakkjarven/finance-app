@@ -9,7 +9,7 @@ class AuthView(ctk.CTkFrame):
         box = ctk.CTkFrame(self, fg_color="#242424", corner_radius=12)
         box.place(relx=0.5, rely=0.5, anchor="center")
 
-        title = ctk.CTkLabel(box, text="YNAB Finance", font=ctk.CTkFont(size=26, weight="bold"))
+        title = ctk.CTkLabel(box, text="T&Gr (Think and grow rich)", font=ctk.CTkFont(size=26, weight="bold"))
         title.pack(padx=30, pady=(30, 5))
 
         subtitle = ctk.CTkLabel(box, text="Управление личным бюджетом", font=ctk.CTkFont(size=13), text_color="gray")
