@@ -9,13 +9,11 @@ class TransactionsView(ctk.CTkFrame):
         self.accounts_map = {}
         self.categories_map = {}
 
-        # Левая колонка: форма создания / Правая: список
         left_col = ctk.CTkFrame(self, fg_color="#18181b", corner_radius=10)
         left_col.pack(side="left", fill="y", padx=(0, 15), pady=0, ipadx=10)
 
         ctk.CTkLabel(left_col, text="Новая операция", font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", padx=15, pady=(15, 10))
 
-        # Переключатель: Расход / Доход
         self.type_switch = ctk.CTkSegmentedButton(left_col, values=["Расход", "Доход"], width=280)
         self.type_switch.set("Расход")
         self.type_switch.pack(padx=15, pady=(0, 10))
@@ -40,7 +38,6 @@ class TransactionsView(ctk.CTkFrame):
         self.status_label = ctk.CTkLabel(left_col, text="", font=ctk.CTkFont(size=12), wraplength=280)
         self.status_label.pack(padx=15, pady=5)
 
-        # Правая колонка: История операций
         right_col = ctk.CTkFrame(self, fg_color="transparent")
         right_col.pack(side="right", fill="both", expand=True)
 
@@ -52,7 +49,6 @@ class TransactionsView(ctk.CTkFrame):
         self.load_data()
 
     def load_data(self):
-        # Загрузка счетов
         ok_acc, accs, _ = api.get_accounts(self.controller.token)
         if ok_acc and accs:
             self.accounts_map = {item["name"]: item["id"] for item in accs}
@@ -60,7 +56,6 @@ class TransactionsView(ctk.CTkFrame):
             self.account_menu.configure(values=names)
             self.account_menu.set(names[0])
 
-        # Загрузка категорий
         ok_cat, cats, _ = api.get_categories(self.controller.token)
         if ok_cat and cats:
             self.categories_map = {item["name"]: item["id"] for item in cats}
@@ -68,7 +63,6 @@ class TransactionsView(ctk.CTkFrame):
             self.category_menu.configure(values=names)
             self.category_menu.set(names[0])
 
-        # Загрузка истории
         for widget in self.history_scroll.winfo_children():
             widget.destroy()
 

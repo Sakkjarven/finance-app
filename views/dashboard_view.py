@@ -44,12 +44,10 @@ class DashboardView(ctk.CTkFrame):
         self.month_val = ctk.CTkLabel(self.month_card, text=self.current_month, font=ctk.CTkFont(size=22, weight="bold"), text_color="#3b82f6")
         self.month_val.pack(anchor="w", padx=15)
 
-        # Бюджеты
         ctk.CTkLabel(self, text=f"Исполнение бюджетов ({self.current_month})", font=ctk.CTkFont(size=16, weight="bold")).pack(anchor="w", pady=(10, 8))
         self.budget_scroll = ctk.CTkScrollableFrame(self, height=180, fg_color="#18181b", corner_radius=10)
         self.budget_scroll.pack(fill="x", pady=(0, 15))
 
-        # Транзакции
         ctk.CTkLabel(self, text="Последние операции", font=ctk.CTkFont(size=16, weight="bold")).pack(anchor="w", pady=(5, 8))
         self.tx_scroll = ctk.CTkScrollableFrame(self, height=160, fg_color="#18181b", corner_radius=10)
         self.tx_scroll.pack(fill="both", expand=True)
@@ -67,7 +65,6 @@ class DashboardView(ctk.CTkFrame):
 
         def on_loaded(data):
             accounts, summaries, tx_list = data
-            # Обновление UI вызывается через after главного окна для потокобезопасности
             self.after(0, lambda: self._update_ui(accounts, summaries, tx_list))
 
         run_in_background(fetch_all, on_success=on_loaded)
@@ -112,7 +109,6 @@ class DashboardView(ctk.CTkFrame):
         else:
             ctk.CTkLabel(self.budget_scroll, text="Нет бюджетов на этот месяц", text_color="gray").pack(pady=20)
 
-        # 3. Транзакции
         for w in self.tx_scroll.winfo_children():
             w.destroy()
 

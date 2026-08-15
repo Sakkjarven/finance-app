@@ -6,7 +6,6 @@ class AccountsView(ctk.CTkFrame):
         super().__init__(parent, fg_color="transparent")
         self.controller = controller
 
-        # Левая колонка: Добавление
         left_col = ctk.CTkFrame(self, fg_color="#18181b", corner_radius=10)
         left_col.pack(side="left", fill="y", padx=(0, 15), ipadx=10)
 

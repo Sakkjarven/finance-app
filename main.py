@@ -154,8 +154,10 @@ def create_transaction(
     return db_transaction
 
 @app.get("/transactions/", response_model=list[schemas.TransactionResponse])
-def get_transactions(db: Session = Depends(get_db)):
-    transactions = db.query(models.Transaction).all()
+def get_transactions(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    transactions = db.query(models.Transaction).filter(
+        models.Transaction.user_id == current_user.id
+    ).all()
     return transactions
 
 # endpoints for budget alloc
@@ -175,7 +177,7 @@ def set_budget(
         raise HTTPException(status_code=404, detail="Категория не найдена или принадлежит не вам")
 
     existing_budget = db.query(models.BudgetAllocation).filter(
-        models.BudgetAllocation.user_id == current_user.id, # <-- БЕРЕМ ИЗ ТОКЕНА
+        models.BudgetAllocation.user_id == current_user.id,
         models.BudgetAllocation.category_id == budget.category_id,
         models.BudgetAllocation.month == budget.month
     ).first()

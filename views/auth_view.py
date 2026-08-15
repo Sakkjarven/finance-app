@@ -6,7 +6,6 @@ class AuthView(ctk.CTkFrame):
         super().__init__(parent, fg_color="transparent")
         self.controller = controller
 
-        # Центрирующий контейнер
         box = ctk.CTkFrame(self, fg_color="#242424", corner_radius=12)
         box.place(relx=0.5, rely=0.5, anchor="center")
 

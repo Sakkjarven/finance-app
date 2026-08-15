@@ -8,7 +8,6 @@ class BudgetView(ctk.CTkFrame):
         self.controller = controller
         self.categories_map = {}
 
-        # Левая колонка: Форма назначения лимита
         left_col = ctk.CTkFrame(self, fg_color="#18181b", corner_radius=10)
         left_col.pack(side="left", fill="y", padx=(0, 15), ipadx=10)
 
