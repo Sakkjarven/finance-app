@@ -6,34 +6,38 @@ class AuthView(ctk.CTkFrame):
         super().__init__(parent, fg_color="transparent")
         self.controller = controller
 
-        self.title = ctk.CTkLabel(self, text="YNAB Finance", font=ctk.CTkFont(size=28, weight="bold"))
-        self.title.pack(pady=(30, 5))
+        # Центрирующий контейнер
+        box = ctk.CTkFrame(self, fg_color="#242424", corner_radius=12)
+        box.place(relx=0.5, rely=0.5, anchor="center")
 
-        self.subtitle = ctk.CTkLabel(self, text="Авторизация", font=ctk.CTkFont(size=14), text_color="gray")
-        self.subtitle.pack(pady=(0, 25))
+        title = ctk.CTkLabel(box, text="YNAB Finance", font=ctk.CTkFont(size=26, weight="bold"))
+        title.pack(padx=30, pady=(30, 5))
 
-        self.email_entry = ctk.CTkEntry(self, placeholder_text="Email", width=320, height=40)
-        self.email_entry.pack(pady=8)
+        subtitle = ctk.CTkLabel(box, text="Управление личным бюджетом", font=ctk.CTkFont(size=13), text_color="gray")
+        subtitle.pack(padx=30, pady=(0, 20))
 
-        self.pass_entry = ctk.CTkEntry(self, placeholder_text="Пароль", show="*", width=320, height=40)
-        self.pass_entry.pack(pady=8)
+        self.email_entry = ctk.CTkEntry(box, placeholder_text="Email", width=280, height=38)
+        self.email_entry.pack(padx=30, pady=8)
 
-        self.status_label = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=12), wraplength=300)
-        self.status_label.pack(pady=5)
+        self.pass_entry = ctk.CTkEntry(box, placeholder_text="Пароль", show="*", width=280, height=38)
+        self.pass_entry.pack(padx=30, pady=8)
 
-        self.login_btn = ctk.CTkButton(self, text="Войти в систему", width=320, height=42, command=self.on_login)
-        self.login_btn.pack(pady=(10, 6))
+        self.status_label = ctk.CTkLabel(box, text="", font=ctk.CTkFont(size=12), wraplength=280)
+        self.status_label.pack(padx=30, pady=5)
+
+        self.login_btn = ctk.CTkButton(box, text="Войти", width=280, height=40, command=self.on_login)
+        self.login_btn.pack(padx=30, pady=(8, 4))
 
         self.register_btn = ctk.CTkButton(
-            self, 
-            text="Создать новый аккаунт", 
-            width=320, 
-            height=38, 
-            fg_color="#2b2b2b", 
-            hover_color="#3a3a3a", 
+            box, 
+            text="Создать аккаунт", 
+            width=280, 
+            height=36, 
+            fg_color="#333333", 
+            hover_color="#444444", 
             command=self.on_register
         )
-        self.register_btn.pack(pady=6)
+        self.register_btn.pack(padx=30, pady=(4, 30))
 
         self.email_entry.bind("<Return>", lambda e: self.on_login())
         self.pass_entry.bind("<Return>", lambda e: self.on_login())
@@ -43,13 +47,14 @@ class AuthView(ctk.CTkFrame):
         password = self.pass_entry.get().strip()
 
         if not email or not password:
-            self.status_label.configure(text="Заполните email и пароль!", text_color="#FF5555")
+            self.status_label.configure(text="Заполните все поля!", text_color="#FF5555")
             return
 
         success, result = api.login(email, password)
         if success:
             self.controller.token = result
-            self.controller.show_main_view()
+            self.controller.user_email = email
+            self.controller.show_main_app()
         else:
             self.status_label.configure(text=result, text_color="#FF5555")
 
@@ -63,6 +68,6 @@ class AuthView(ctk.CTkFrame):
 
         success, message = api.register(email, password)
         if success:
-            self.status_label.configure(text=f"{message} Теперь нажмите «Войти»", text_color="#55FF55")
+            self.status_label.configure(text=f"{message} Теперь войдите.", text_color="#55FF55")
         else:
             self.status_label.configure(text=message, text_color="#FF5555")
